@@ -9,12 +9,15 @@ PORT = 11002 #puerto del servidor
 def crate_ssl_connection():
     #Crea y devuelve un socket SSL conectado al servidor
     context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-
     #EDU GUAPO AQUÍ VA el certificado de la CA (para validar el del servidor)
+    
+    #Ahí lo llevas rey 👑
+    
     # Te doy una pista context.load_verify_locations(cafile="path/to/ca.crt")
+    context.load_verify_locations(cafile="ca.crt") #Certificado del autoridad certificadora
 
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE # Cuando lo tengas, cámbialo a context.verify_mode = ssl.CERT_REQUIRED
+    context.check_hostname = True   #Compara el nombre de server:_hostname
+    context.verify_mode = ssl.CERT_REQUIRED # Cuando lo tengas, cámbialo a context.verify_mode = ssl.CERT_REQUIRED
 
     sock = socket.create_connection((HOST, PORT))
     ssl_sock = context.wrap_socket(sock, server_hostname=HOST)

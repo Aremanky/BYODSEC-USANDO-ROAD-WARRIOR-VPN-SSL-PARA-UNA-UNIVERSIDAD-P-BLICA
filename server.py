@@ -212,6 +212,12 @@ def main():
     ## SEÑORITO EDU, aquí hay que poner los certificados
     ##lo he investigado es así, pero quiero que lo mires tu mejor
     #context.load_cert_chain(certfile="path/to/certfile", keyfile="path/to/keyfile")
+    context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+
+    try:
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+    except Exception:
+        pass
 
     #Arranque de servidor y aceptación de conexiones
     #Creamos el socket TCP (AF_INET = IPv4, SOCK_STREAM = TCP)
