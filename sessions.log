@@ -1,0 +1,5 @@
+[2025-10-14 14:45:11][LOGIN SUCCESS] adri desde ('127.0.0.1', 57370)
+[2025-10-14 14:45:21][LOGOUT] adri desde ('127.0.0.1', 57370)
+[2025-10-14 14:45:24][LOGIN FAIL] as desde ('127.0.0.1', 57370), 2 intentos restantes
+[2025-10-14 14:45:35][LOGIN SUCCESS] adri desde ('127.0.0.1', 57370)
+[2025-10-14 14:48:01][LOGOUT] adri (desconexión inesperada) desde ('127.0.0.1', 57370)

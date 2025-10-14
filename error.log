@@ -1,0 +1,5 @@
+[2025-10-14 14:45:11][ERROR] por parte de adri desde ('127.0.0.1', 57370), usuario ya bloqueado
+[2025-10-14 14:45:11][ERROR] al enviar historial a adri: slice(-50, None, None)
+[2025-10-14 14:45:24][ERROR] por parte de as desde ('127.0.0.1', 57370), usuario ya bloqueado
+[2025-10-14 14:45:24][ERROR] por parte de as desde ('127.0.0.1', 57370), fallo de login Usuario  no encontrado
+[2025-10-14 14:45:35][ERROR] al enviar historial a adri: slice(-50, None, None)

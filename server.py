@@ -14,6 +14,7 @@ PORT = 11002 # Puerto por el que escucha
 SESSIONS_LOG = "sessions.log"
 ERROR_LOG = "error.log"
 FILE_BLOC = 'usuarios_bloqueados.json'
+CHAT_HISTORY_FILE = "chat_history.json"
 
 #Gestor de base de datos
 user_manager = UserManager()
@@ -22,6 +23,7 @@ users_bloq = {} # Almacenamiento de usuarios bloqueados
 sesiones = {} # Diccionario para mapear direcciones a usuarios logueados
 login_attempts= {} # Diccionario para contar los intentos de login por usuario
 intentos = 3 # Número máximo de intentos de login
+clients = {}  # addr: conn
 
 # ---Estas son las funciones de log---
 def log_session_event(evento: str):
@@ -81,7 +83,10 @@ def comprobar_bloqueado(user,):
         print(f'Error cargando usuarios bloqueados!!! {e}')
         return desbloqueada
 
-
+def send_message(conn, data):
+    #Envía un diccionario JSON al servidor
+    msg = json.dumps(data) + "\n"
+    conn.sendall(msg.encode())
 
 # ---Manejo de clientes---
 def handle_client(conn, addr):
@@ -111,6 +116,8 @@ def handle_client(conn, addr):
                             print(f"[{addr}] Mensaje de JSON: {obj}")
 
                             accion = obj.get("accion")
+
+                            resp = {}
 
                             # ---Registro de usuario---
                             if accion == "register":
@@ -149,6 +156,16 @@ def handle_client(conn, addr):
                                                 log_session_event(f"[LOGIN SUCCESS] {obj['username']} desde {addr}")
                                                 #La respuesta 
                                                 resp = {"status": "OK", "mensaje": msg}
+                                                clients[addr] = conn
+                                                try:
+                                                    if os.path.exists("chat_history.json"):
+                                                        with open("chat_history.json", "r") as f:
+                                                            historial = json.load(f)
+                                                        # enviamos los últimos 50 mensajes al usuario recién logueado
+                                                        for msg in historial[-50:]:
+                                                            send_message(conn, {"tipo": "chat", **msg})
+                                                except Exception as e:
+                                                    log_error(f"[ERROR] al enviar historial a {obj['username']}: {e}")
                                         else:
                                                 # incrementamos el contador porque ha fallado
                                                 print(login_attempts)
@@ -178,7 +195,31 @@ def handle_client(conn, addr):
                             
                             #solicitar petición de transacción para generar un nonce
                             elif accion == "chat":
-                                pass #Implementar chat
+                                if addr in sesiones:
+                                    # reenviar a todos los clientes conectados
+                                    usuario = sesiones[addr]
+                                    texto = obj.get("texto", "").strip()
+                                    # Construir mensaje
+                                    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                    msg_obj = {"tipo": "chat", "from": usuario, "texto": texto, "ts": ts}
+
+                                    # Guardar en historial
+                                    chat_history = {"from": usuario, "texto": texto, "ts": ts}
+                                    try:
+                                        with open(CHAT_HISTORY_FILE, "w") as f:
+                                            json.dump(chat_history, f, indent=2)
+                                    except Exception as e:
+                                        log_error(f"[ERROR] Guardando chat: {e}")
+
+                                    # Broadcast a todos los clientes conectados
+                                    for c_addr, c_conn in clients.items():
+                                        try:
+                                            c_conn.sendall((json.dumps(msg_obj) + "\n").encode())
+                                        except Exception as e:
+                                            log_error(f"[ERROR] enviando chat a {c_addr}: {e}")
+                                else:
+                                    resp = {"status":"ERROR", "mensaje":"Debes iniciar sesión para chatear"}
+
 
                             # ---Logout del usuario---
                             elif accion == "logout":
@@ -187,6 +228,8 @@ def handle_client(conn, addr):
                                     del sesiones[addr] #Eliminamos la sesión
                                     log_session_event(f"[LOGOUT] {usuario} desde {addr}") #Guardamos en el log la acción
                                     resp = {"status": "OK", "mensaje": "Sesión cerrada"}
+                                    clients.pop(addr, None)
+
                                 else:
                                     resp = {"status": "ERROR", "mensaje": "No estabas logado"}
                                     log_error(f"[ERROR] intento de desloggeo sin estar logeado") #Guardamos en el log el error
@@ -202,6 +245,7 @@ def handle_client(conn, addr):
         log_error(f"[FATAL ERROR] Ha sudecido un error con {addr}: {e}") #Guardamos en el log el error
     finally:
         usuario = sesiones.pop(addr, None) #Eliminamos la sesión si existe
+        clients.pop(addr, None) # Eliminamos el cliente de la lista de clientes conectados
         if usuario:
             log_session_event(f"[LOGOUT] {usuario} (desconexión inesperada) desde {addr}")  #Guardamos en el log del logout inesperado
         print(f"[-] Cliente con ip {addr} se ha desconectado")
