@@ -157,15 +157,6 @@ def handle_client(conn, addr):
                                                 #La respuesta 
                                                 resp = {"status": "OK", "mensaje": msg}
                                                 clients[addr] = conn
-                                                try:
-                                                    if os.path.exists("chat_history.json"):
-                                                        with open("chat_history.json", "r") as f:
-                                                            historial = json.load(f)
-                                                        # enviamos los últimos 50 mensajes al usuario recién logueado
-                                                        for msg in historial[-50:]:
-                                                            send_message(conn, {"tipo": "chat", **msg})
-                                                except Exception as e:
-                                                    log_error(f"[ERROR] al enviar historial a {obj['username']}: {e}")
                                         else:
                                                 # incrementamos el contador porque ha fallado
                                                 print(login_attempts)
